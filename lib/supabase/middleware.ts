@@ -1,50 +1,48 @@
-// lib/supabase/middleware.ts
-import { createClient } from '@supabase/supabase-js'
-import { NextResponse, type NextRequest } from 'next/server'
+import { createServerClient } from "@supabase/ssr"
+import { NextResponse, type NextRequest } from "next/server"
 
-// Edge-safe Supabase client
-const getSupabaseClient = () =>
-  createClient(
+export async function updateSession(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({
+    request,
+  })
+
+  const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { global: { fetch } }
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          supabaseResponse = NextResponse.next({
+            request,
+          })
+          cookiesToSet.forEach(({ name, value, options }) => supabaseResponse.cookies.set(name, value, options))
+        },
+      },
+    },
   )
 
-// Pages that should be publicly accessible (no redirect)
-const PUBLIC_PATHS = ['/', '/auth/login', '/auth/signup']
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-// The function you can call anywhere in your app
-export async function updateSession(request: NextRequest) {
-  const supabase = getSupabaseClient()
-  const path = request.nextUrl.pathname
-
-  // Skip auth check for public pages
-  if (PUBLIC_PATHS.includes(path)) {
-    return NextResponse.next()
+  if (
+    request.nextUrl.pathname !== "/" &&
+    !user &&
+    !request.nextUrl.pathname.startsWith("/login") &&
+    !request.nextUrl.pathname.startsWith("/auth")
+  ) {
+    const url = request.nextUrl.clone()
+    url.pathname = "/auth/login"
+    return NextResponse.redirect(url)
   }
 
-  const token = request.cookies.get('sb-access-token')?.value
-
-  // Redirect to login if no token
-  if (!token) {
-    return NextResponse.redirect(new URL('/auth/login', request.url))
-  }
-
-  // Check user session
-  const { data, error } = await supabase.auth.getUser(token)
-
-  if (error || !data.user) {
-    return NextResponse.redirect(new URL('/auth/login', request.url))
-  }
-
-  // Everything ok, continue request
-  const response = NextResponse.next()
-  // Optionally pass user info to headers
-  response.headers.set('x-user-id', data.user.id)
-  return response
+  return supabaseResponse
 }
 
-// Export as middleware for Vercel
 export const middleware = updateSession
 
 export const config = {
