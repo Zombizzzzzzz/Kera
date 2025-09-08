@@ -16,8 +16,8 @@ export async function NotificationsList({ userId }: NotificationsListProps) {
       *,
       related_user:related_user_id (
         id,
-        username,
-        display_name,
+        displayname,
+        full_name,
         avatar_url
       ),
       related_post:related_post_id (
