@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import { PostCard } from "@/components/post-card"
+import { AnimatedFeed } from "@/components/animated-feed"
 
 interface PostFeedProps {
   userId: string
@@ -8,7 +9,6 @@ interface PostFeedProps {
 export async function PostFeed({ userId }: PostFeedProps) {
   const supabase = await createClient()
 
-  // Get posts with author information and user's reaction status
   const { data: posts, error } = await supabase
     .from("posts")
     .select(`
@@ -47,11 +47,5 @@ export async function PostFeed({ userId }: PostFeedProps) {
     )
   }
 
-  return (
-    <div className="space-y-4">
-      {posts.map((post) => (
-        <PostCard key={post.id} post={post} currentUserId={userId} />
-      ))}
-    </div>
-  )
+  return <AnimatedFeed posts={posts} userId={userId} />
 }
