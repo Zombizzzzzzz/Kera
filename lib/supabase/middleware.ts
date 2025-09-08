@@ -41,8 +41,10 @@ export async function updateSession(request: NextRequest) {
 
     return supabaseResponse
   } catch (err) {
-    console.error("Middleware error:", err)
-    return new NextResponse("Middleware error", { status: 500 })
+    // Log the actual error message
+    console.error("Middleware error:", err instanceof Error ? err.message : err)
+    // Return the error message in the response for debugging
+    return new NextResponse(`Middleware error: ${err instanceof Error ? err.message : err}`, { status: 500 })
   }
 }
 
