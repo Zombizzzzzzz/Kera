@@ -26,7 +26,7 @@ export async function ProfilePosts({ userId, currentUserId }: ProfilePostsProps)
         type
       )
     `)
-    .eq("author_id", userId)
+    .eq("user_id", userId)
     .order("created_at", { ascending: false })
 
   if (error) {
